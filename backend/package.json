@@ -1,0 +1,33 @@
+{
+  "name": "warranty-manager-backend",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "jest --runInBand"
+  },
+  "jest": {
+    "setupFiles": [
+      "<rootDir>/tests/setup.js"
+    ]
+  },
+  "dependencies": {
+    "bcrypt": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "express-rate-limit": "latest",
+    "express-session": "latest",
+    "helmet": "latest",
+    "multer": "latest",
+    "mysql2": "latest",
+    "tesseract.js": "latest",
+    "heic-convert": "latest",
+    "pdf-parse": "latest"
+  },
+  "devDependencies": {
+    "jest": "latest",
+    "supertest": "latest"
+  }
+}

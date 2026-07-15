@@ -1,0 +1,33 @@
+CREATE DATABASE IF NOT EXISTS warranty_managers;
+
+USE warranty_managers;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  full_name VARCHAR(100) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY users_email_unique (email)
+);
+
+CREATE TABLE IF NOT EXISTS products (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  category VARCHAR(100) NOT NULL,
+  store_name VARCHAR(255) NOT NULL,
+  purchase_date DATE NOT NULL,
+  warranty_duration INT UNSIGNED NOT NULL,
+  warranty_unit ENUM('days', 'months', 'years') NOT NULL,
+  expiration_date DATE NOT NULL,
+  serial_number VARCHAR(255) NULL,
+  notes TEXT NULL,
+  invoice_path VARCHAR(500) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  CONSTRAINT products_user_id_foreign FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
