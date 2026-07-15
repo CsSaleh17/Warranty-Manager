@@ -316,7 +316,6 @@ Use the commands in [Automated Tests](#automated-tests) during a presentation. T
 
 ## Known Limitations
 
-- A local MySQL setup is required.
 - OCR results depend on invoice clarity and recognizable labelled fields.
 - The current frontend has no dedicated Product Details screen.
 - Search, category filtering, and sorting controls described in the PRD are not present in the current frontend.
@@ -351,5 +350,4 @@ Use the commands in [Automated Tests](#automated-tests) during a presentation. T
 
 - A GitHub repository URL, if one is created.
 - A live deployment URL, if one is created.
-- Confirmation from a valid Git worktree that `.env` is not tracked.
 - A real terminal screenshot of the passing test output, if a terminal-capture surface is available.
