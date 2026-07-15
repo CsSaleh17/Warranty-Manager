@@ -331,10 +331,9 @@ Use the commands in [Automated Tests](#automated-tests) during a presentation. T
 - More robust OCR extraction.
 - Arabic and English language support.
 
-## GitHub and Deployment
+## GitHub 
 
-- GitHub repository: Not provided.
-- Live deployment: Not provided.
+- GitHub repository: https://github.com/CsSaleh17/Warranty-Manager
 
 ## Final Verification
 
