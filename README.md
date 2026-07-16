@@ -1,5 +1,7 @@
 # Warranty Manager
 
+**Developed by:** Saleh Khalid Jarean
+
 ## Project Overview
 
 Warranty Manager is a responsive web application for keeping product warranty information and purchase invoices in one place. It is intended for individuals, families, students, professionals, and small businesses that need to avoid lost invoices and missed warranty expiry dates. Users can create an account, manage their own products, attach invoices, and see warranty status and days remaining.
