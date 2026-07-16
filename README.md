@@ -1,6 +1,6 @@
 # Warranty Manager
 
-**Developed by:** Saleh Khalid Jarean
+**Developed by:** Saleh Khalid Jarwan
 
 ## Project Overview
 
