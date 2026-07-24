@@ -5,7 +5,27 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "db:migrate": "node src/migrate.js",
+    "db:preview": "node src/previewMigrations.js",
+    "db:inspect": "node src/inspectDatabase.js",
+    "db:initialize:staging": "node src/initializeStagingDatabase.js",
+    "db:verify:staging": "node src/verifyStagingDatabase.js",
+    "db:validate": "node src/validateSchema.js",
+    "db:backup": "node src/backupDatabase.js",
+    "db:backup:verify": "node src/verifyDatabaseBackup.js",
+    "db:restore-target:create": "node src/createRestoreDatabase.js",
+    "db:restore:isolated": "node src/restoreDatabase.js",
+    "db:restore:verify": "node src/verifyRestoredDatabase.js",
+    "files:backup": "node src/backupFiles.js",
+    "files:backup:verify": "node src/verifyFilesBackup.js",
+    "files:restore:isolated": "node src/restoreFiles.js",
+    "deployment:smoke": "node src/smokeDeployment.js",
+    "staging:env:create": "node src/createStagingEnvironment.js",
+    "release:validate": "node src/validateRelease.js",
+    "syntax:check": "node src/checkSyntax.js",
+    "reminders:run": "node src/runReminders.js",
+    "gemini:health": "node src/geminiHealth.js"
   },
   "jest": {
     "setupFiles": [
@@ -13,18 +33,21 @@
     ]
   },
   "dependencies": {
+    "@google/genai": "^2.12.0",
     "bcrypt": "latest",
     "cors": "latest",
     "dotenv": "latest",
     "express": "latest",
     "express-rate-limit": "latest",
     "express-session": "latest",
+    "heic-convert": "latest",
     "helmet": "latest",
     "multer": "latest",
     "mysql2": "latest",
-    "tesseract.js": "latest",
-    "heic-convert": "latest",
-    "pdf-parse": "latest"
+    "nodemailer": "latest",
+    "pdf-parse": "latest",
+    "pdf-to-img": "^6.2.0",
+    "tesseract.js": "latest"
   },
   "devDependencies": {
     "jest": "latest",

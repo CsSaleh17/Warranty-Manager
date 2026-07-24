@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
+    "i18next": "^26.3.6",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "react-i18next": "^17.0.10",
+    "vite": "latest"
   },
   "devDependencies": {
     "@babel/preset-env": "latest",

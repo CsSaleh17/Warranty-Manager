@@ -42,11 +42,8 @@ describe('POST /api/register', () => {
       password: 'SecurePass1!',
     });
 
-    expect(response.status).toBe(201);
-    expect(response.body).toEqual({
-      message: 'Registration successful.',
-      user: { id: 7, fullName: 'Ava Smith', email: 'ava@example.com' },
-    });
+    expect(response.status).toBe(202);
+    expect(response.body).toEqual({ message: 'If this email can be registered, the account is ready to use.' });
     expect(bcrypt.hash).toHaveBeenCalledWith('SecurePass1!', 12);
     expect(database.execute).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO users'),
@@ -54,7 +51,15 @@ describe('POST /api/register', () => {
     );
   });
 
-  it('rejects an existing email address', async () => {
+  it.each(['http://localhost:5173', 'http://127.0.0.1:5173'])('registers successfully from approved origin %s', async (origin) => {
+    bcrypt.hash.mockResolvedValue('hashed-password');
+    database.execute.mockResolvedValue([{ insertId: 8 }]);
+    const response = await request(app).post('/api/register').set('Origin', origin).send({ fullName: 'Loopback User', email: 'loopback@example.com', password: 'SecurePass1!' });
+    expect(response.status).toBe(202);
+    expect(response.body).toEqual({ message: 'If this email can be registered, the account is ready to use.' });
+  });
+
+  it('does not reveal whether an email address is already registered', async () => {
     const duplicateError = new Error('Duplicate entry');
     duplicateError.code = 'ER_DUP_ENTRY';
     bcrypt.hash.mockResolvedValue('hashed-password');
@@ -66,7 +71,7 @@ describe('POST /api/register', () => {
       password: 'SecurePass1!',
     });
 
-    expect(response.status).toBe(409);
-    expect(response.body).toEqual({ error: 'An account with this email already exists.' });
+    expect(response.status).toBe(202);
+    expect(response.body).toEqual({ message: 'If this email can be registered, the account is ready to use.' });
   });
 });

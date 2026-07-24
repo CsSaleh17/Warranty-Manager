@@ -41,6 +41,8 @@ describe('LoginForm', () => {
 
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Log in' }));
+    fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'ava@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'WrongPass1!' } });
     fireEvent.click(screen.getAllByRole('button', { name: 'Log in' }).find((button) => button.type === 'submit'));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Email or password is incorrect.');

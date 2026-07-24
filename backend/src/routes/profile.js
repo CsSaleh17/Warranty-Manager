@@ -1,7 +1,8 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
 const database = require('../config/database');
 const requireAuthentication = require('../middleware/requireAuthentication');
+const bcrypt = require('bcrypt');
+const auditLogger = require('../services/auditLogger');
 
 const router = express.Router();
 router.use(requireAuthentication);
@@ -35,15 +36,20 @@ router.put('/password', async (req, res) => {
   const errors = {};
   if (typeof currentPassword !== 'string' || !currentPassword) errors.currentPassword = 'Current password is required.';
   if (typeof newPassword !== 'string' || newPassword.length < 8) errors.newPassword = 'New password must be at least 8 characters.';
-  if (newPassword !== confirmPassword) errors.confirmPassword = 'Passwords do not match.';
+  if (typeof confirmPassword !== 'string' || !confirmPassword) errors.confirmPassword = 'Password confirmation is required.';
+  else if (newPassword !== confirmPassword) errors.confirmPassword = 'Passwords do not match.';
   if (Object.keys(errors).length) return res.status(400).json({ errors });
   try {
     const [rows] = await database.execute('SELECT password_hash FROM users WHERE id = ?', [req.session.user.id]);
-    if (!rows[0] || !(await bcrypt.compare(currentPassword, rows[0].password_hash))) return res.status(400).json({ errors: { currentPassword: 'Current password is incorrect.' } });
-    const hash = await bcrypt.hash(newPassword, 12);
-    await database.execute('UPDATE users SET password_hash = ? WHERE id = ?', [hash, req.session.user.id]);
-    return res.json({ message: 'Password updated successfully.' });
-  } catch { return res.status(500).json({ error: 'Unable to update password.' }); }
+    if (!rows[0] || !(await bcrypt.compare(currentPassword, rows[0].password_hash))) {
+      auditLogger.securityEvent('password_change_failure', { userId: req.session.user.id, outcome: 'invalid_current_password' });
+      return res.status(400).json({ errors: { currentPassword: 'Current password is incorrect.' } });
+    }
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await database.execute('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, req.session.user.id]);
+    auditLogger.securityEvent('password_change_success', { userId: req.session.user.id, outcome: 'success' });
+    return res.json({ message: 'Password changed successfully.' });
+  } catch { return res.status(500).json({ error: 'Unable to change password. Please try again.' }); }
 });
 
 module.exports = router;

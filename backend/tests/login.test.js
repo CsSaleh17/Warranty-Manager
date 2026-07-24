@@ -32,6 +32,7 @@ describe('login and authenticated user endpoints', () => {
 
   it('rejects invalid credentials without revealing which field is incorrect', async () => {
     database.execute.mockResolvedValue([[]]);
+    bcrypt.compare.mockResolvedValue(false);
 
     const response = await request(app).post('/api/login').set('Origin', frontendOrigin).send({
       email: 'ava@example.com',
@@ -40,6 +41,8 @@ describe('login and authenticated user endpoints', () => {
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({ error: 'Email or password is incorrect.' });
+    expect(bcrypt.compare).toHaveBeenCalledTimes(1);
+    expect(bcrypt.compare).toHaveBeenCalledWith('SecurePass1!', expect.stringMatching(/^\$2[aby]\$/));
   });
 
   it('creates a regenerated session and returns the authenticated user', async () => {
@@ -62,6 +65,9 @@ describe('login and authenticated user endpoints', () => {
     expect(loginResponse.headers['set-cookie']).toEqual(expect.arrayContaining([
       expect.stringContaining('warranty.sid='),
     ]));
+    expect(loginResponse.headers['set-cookie'][0]).toMatch(/HttpOnly/i);
+    expect(loginResponse.headers['set-cookie'][0]).toMatch(/SameSite=Lax/i);
+    expect(loginResponse.headers['set-cookie'][0]).not.toMatch(/; Secure/i);
     expect(bcrypt.compare).toHaveBeenCalledWith('SecurePass1!', 'hashed-password');
 
     const meResponse = await agent.get('/api/me');
@@ -69,10 +75,28 @@ describe('login and authenticated user endpoints', () => {
     expect(meResponse.body).toEqual({ user: { id: 7, fullName: 'Ava Smith', email: 'ava@example.com' } });
   });
 
+  it.each(['http://localhost:5173', 'http://127.0.0.1:5173'])('logs in and reads the session from approved origin %s', async (origin) => {
+    const agent = request.agent(app);
+    database.execute.mockResolvedValue([[{ id: 7, full_name: 'Ava Smith', email: 'ava@example.com', password_hash: 'hashed-password' }]]);
+    bcrypt.compare.mockResolvedValue(true);
+    const login = await agent.post('/api/login').set('Origin', origin).send({ email: 'ava@example.com', password: 'SecurePass1!' });
+    expect(login.status).toBe(200);
+    expect((await agent.get('/api/me')).status).toBe(200);
+  });
+
   it('requires an authenticated session for the current-user endpoint', async () => {
     const response = await request(app).get('/api/me');
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({ error: 'Authentication is required.' });
+  });
+
+  it('invalidates the active session on logout', async () => {
+    const agent = request.agent(app);
+    database.execute.mockResolvedValueOnce([[{ id: 7, full_name: 'Ava Smith', email: 'ava@example.com', password_hash: 'hashed-password' }]]);
+    bcrypt.compare.mockResolvedValueOnce(true);
+    expect((await agent.post('/api/login').set('Origin', frontendOrigin).send({ email: 'ava@example.com', password: 'SecurePass1!' })).status).toBe(200);
+    expect((await agent.post('/api/logout').set('Origin', frontendOrigin)).status).toBe(200);
+    expect((await agent.get('/api/me')).status).toBe(401);
   });
 });

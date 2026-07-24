@@ -1,8 +1,6 @@
-const allowedOrigins = new Set([
-  process.env.FRONTEND_ORIGIN || 'http://localhost:5173',
-]);
-
-function verifyRequestOrigin(req, res, next) {
+const { getAllowedOrigins } = require('../config/origins');
+function createVerifyRequestOrigin(allowedOrigins = getAllowedOrigins()) {
+return function verifyRequestOrigin(req, res, next) {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
 
   const origin = req.get('Origin');
@@ -11,6 +9,8 @@ function verifyRequestOrigin(req, res, next) {
   }
 
   return next();
+};
 }
 
-module.exports = verifyRequestOrigin;
+module.exports = createVerifyRequestOrigin();
+module.exports.createVerifyRequestOrigin = createVerifyRequestOrigin;

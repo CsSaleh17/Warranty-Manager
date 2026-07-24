@@ -1,0 +1,17 @@
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function ForgotPasswordPage({ onLogin }) {
+  const { t } = useTranslation(); const [email, setEmail] = useState(''); const [message, setMessage] = useState(''); const [error, setError] = useState('');
+  const submit = async (event) => { event.preventDefault(); setMessage(''); if (!email.trim()) return setError(t('authValidation.emailRequired')); if (!emailPattern.test(email)) return setError(t('authValidation.emailInvalid')); setError(''); try { const response = await fetch('/api/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }); const data = await response.json(); if (!response.ok) return setError(data.errors?.email || t('password.process')); setMessage(t('password.fallback')); } catch { setError(t('errors.network')); } };
+  return <main className="app-shell"><section className="registration-card"><h1>{t('password.forgot')}</h1><form onSubmit={submit} noValidate><label>{t('auth.email')}<input type="email" dir="ltr" value={email} onChange={e => setEmail(e.target.value)} /></label><button>{t('password.send')}</button></form>{message && <p role="status">{message}</p>}{error && <p role="alert">{error}</p>}<button type="button" className="secondary-button" onClick={onLogin}>{t('password.back')}</button></section></main>;
+}
+
+export function ResetPasswordPage({ onLogin }) {
+  const { t } = useTranslation(); const [newPassword, setNewPassword] = useState(''); const [confirmPassword, setConfirmPassword] = useState(''); const [message, setMessage] = useState(''); const [error, setError] = useState(''); const token = new URLSearchParams(window.location.search).get('token') || '';
+  const submit = async (event) => { event.preventDefault(); if (!newPassword) return setError(t('authValidation.passwordRequired')); if (newPassword.length < 8) return setError(t('authValidation.passwordMin', { count: 8 })); if (!confirmPassword) return setError(t('authValidation.confirmRequired')); if (newPassword !== confirmPassword) return setError(t('authValidation.passwordMismatch')); setError(''); try { const response = await fetch('/api/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, newPassword, confirmPassword }) }); const data = await response.json(); if (!response.ok) return setError(Object.values(data.errors || {})[0] || t('password.process')); setMessage(data.message); } catch { setError(t('errors.network')); } };
+  if (!token) return <main className="app-shell"><section className="registration-card"><p role="alert">{t('password.invalid')}</p><button onClick={onLogin}>{t('password.request')}</button></section></main>;
+  return <main className="app-shell"><section className="registration-card"><h1>{t('password.reset')}</h1><form onSubmit={submit} noValidate><label>{t('password.new')}<input type="password" dir="ltr" value={newPassword} onChange={e => setNewPassword(e.target.value)} /></label><label>{t('password.confirm')}<input type="password" dir="ltr" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} /></label><button>{t('password.reset')}</button></form>{message && <p role="status">{message}</p>}{error && <p role="alert">{error}</p>}<button type="button" onClick={onLogin}>{t('password.back')}</button></section></main>;
+}

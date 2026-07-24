@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - name: Backend install
+        working-directory: backend
+        run: npm ci
+      - name: Backend tests and schema validation
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          SESSION_SECRET: ci-only-random-session-secret-not-for-production
+        run: |
+          npm test
+          npm run db:validate
+          npm run syntax:check
+          npm audit --audit-level=high
+      - name: Frontend install, test, build, and audit
+        working-directory: frontend
+        run: |
+          npm ci
+          npm test
+          npm run build
+          npm audit --audit-level=high
+      - name: Reject committed environment files and private keys
+        shell: bash
+        run: |
+          test -z "$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$' || true)"
+          ! git grep -I -E 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY'

@@ -189,18 +189,18 @@ cd ..\frontend
 npm.cmd test
 ```
 
-Final run on July 15, 2026:
+Production-readiness run on July 18, 2026:
 
 | Suite | Result |
 | --- | --- |
-| Backend | 7 test suites passed; 24 tests passed; 0 failed |
-| Frontend | 5 test suites passed; 12 tests passed; 0 failed |
+| Backend | 29 test suites passed; 140 tests passed; 0 failed |
+| Frontend | 12 test suites passed; 58 tests passed; 0 failed |
 
 Backend tests exercise health, registration, login/session handling, authorization, product CRUD, warranty calculation/status boundaries, invoices, profile access/password updates, and CSRF origin rejection. Frontend tests exercise authentication forms, product-form validation, dashboard error handling, and invoice view/download UI behavior.
 
 ## Security Review
 
-The review recorded in [SECURITY_REVIEW.md](SECURITY_REVIEW.md) covers approximately 95% of production application code, including backend routes, middleware, database configuration, frontend pages, and automated tests. It prioritizes authentication, authorization, session handling, queries, invoices, user-controlled rendering, and error handling.
+The review recorded in [SECURITY_REVIEW.md](SECURITY_REVIEW.md) covers the application source, database configuration/migrations, deployment settings, and automated tests. Production procedures and deployed-environment checks are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ### Security Issue
 
@@ -249,7 +249,7 @@ DB_NAME=warranty_managers
 NODE_ENV=development
 ```
 
-The real `.env` is local-only and must contain no values in this README. `.env` is listed in `.gitignore`; however, Git’s metadata was inaccessible in this workspace, so its tracked/untracked status could not be independently verified here. Before committing, run `git ls-files .env` in a valid Git worktree; it should produce no output.
+The real `.env` is local-only and must contain no values in this README. `.env` is ignored and was confirmed untracked during production-readiness review. See [DEPLOYMENT.md](DEPLOYMENT.md) for the complete production variable contract.
 
 ## Installation and Setup
 
@@ -258,10 +258,10 @@ The real `.env` is local-only and must contain no values in this README. `.env` 
 
 ```powershell
 cd backend
-npm.cmd install
+npm.cmd ci
 
 cd ..\frontend
-npm.cmd install
+npm.cmd ci
 ```
 
 3. Create `.env` from `.env.example` and configure MySQL and a strong `SESSION_SECRET`.
@@ -270,12 +270,20 @@ npm.cmd install
 
 ## Database Setup
 
-The schema is [database/schema.sql](database/schema.sql) and creates the `warranty_managers` database with `users` and `products` tables. Each product has a `user_id` foreign key to `users.id`; deleting a user cascades to their products.
+The baseline schema is [database/schema.sql](database/schema.sql). Use it only for a new isolated database. For an existing database, first take and verify a backup, then run the additive migration from `backend/`:
+
+```powershell
+npm.cmd run db:validate
+npm.cmd run db:preview
+npm.cmd run db:migrate
+```
+
+Database deployment commands require an explicit `DEPLOYMENT_ENV`. Mutating staging commands additionally require `STAGING_DATABASE_CONFIRMED=true`; production commands require a separate operation-specific approval value. The migration runner records applied migrations and never drops tables or columns. Follow the staging, backup, and rollback order in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 Import the schema with a locally configured MySQL client, for example:
 
 ```powershell
-mysql -u <your-user> -p < database\schema.sql
+mysql -u <your-user> -p <database-name> < database\schema.sql
 ```
 
 Do not put real credentials in this command history, source files, or README.
@@ -296,7 +304,7 @@ npm.cmd run dev
 
 Open [http://localhost:5173](http://localhost:5173). The API listens on [http://localhost:3000](http://localhost:3000), and the Vite development server proxies `/api` to it.
 
-The backend health endpoint and frontend page were started successfully during final verification. A safe demo registration also completed, confirming local MySQL-backed registration connectivity.
+The backend health endpoint and frontend page were started successfully during final verification. A safe demo registration also completed, confirming local MySQL-backed registration connectivity. The isolated staging workflow and its current status are recorded in [docs/STAGING_VERIFICATION.md](docs/STAGING_VERIFICATION.md).
 
 ## Running the Tests
 
@@ -316,14 +324,14 @@ Use the commands in [Automated Tests](#automated-tests) during a presentation. T
 - [x] A real CSRF issue and its fix are documented.
 - [x] `PRD.md` is available.
 - [x] Application screenshots are included.
-- [ ] GitHub repository or live deployment link is available.
+- [x] A GitHub repository remote is configured; no live deployment was verified.
 
 ## Known Limitations
 
 - OCR results depend on invoice clarity and recognizable labelled fields.
 - The current frontend has no dedicated Product Details screen.
 - Search, category filtering, and sorting controls described in the PRD are not present in the current frontend.
-- Invoice storage is local development storage.
+- Production invoice storage requires the persistent private mount documented in `DEPLOYMENT.md`.
 - The app is a responsive web application, not a native mobile application.
 
 ## Future Improvements
@@ -336,17 +344,18 @@ Use the commands in [Automated Tests](#automated-tests) during a presentation. T
 
 ## GitHub 
 
-- GitHub repository: https://github.com/CsSaleh17/Warranty-Manager
+- GitHub repository: `https://github.com/CsSaleh17/Warranty-Manager.git`
+- Live deployment: Not provided.
 
 ## Final Verification
 
 - Frontend started successfully and returned HTTP 200.
-- Backend health check returned `{ "status": "ok" }`.
+- Backend health check returned `ok`.
 - A safe local registration completed against the configured database.
 - Backend and frontend test suites passed as documented above.
 - Screenshot files listed in this README were captured and exist under `docs/screenshots/`.
 - README links use repository-relative paths where appropriate.
-- `.env` is ignored by `.gitignore`; its tracking status remains pending because this workspace’s `.git` reparse point is not usable by Git.
+- `.env` is ignored by `.gitignore` and is not tracked.
 - The security review contains a real CSRF issue and verified fix.
 - README feature claims were matched against current source code and tests.
 

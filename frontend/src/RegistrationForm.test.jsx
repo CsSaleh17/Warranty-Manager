@@ -45,7 +45,9 @@ describe('RegistrationForm', () => {
     });
 
     render(<App />);
-
+    fireEvent.change(screen.getByLabelText('Full name'), { target: { value: 'Ava Smith' } });
+    fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'ava@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'SecurePass1!' } });
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
 
     expect(await screen.findByText('Enter a valid email address.')).toBeInTheDocument();

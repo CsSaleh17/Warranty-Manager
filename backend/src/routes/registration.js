@@ -2,8 +2,10 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const database = require('../config/database');
+const auditLogger = require('../services/auditLogger');
 
 const router = express.Router();
+const registrationResponse = { message: 'If this email can be registered, the account is ready to use.' };
 
 const registrationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -49,15 +51,15 @@ router.post('/', registrationLimiter, async (req, res) => {
       [normalizedName, normalizedEmail, passwordHash],
     );
 
-    return res.status(201).json({
-      message: 'Registration successful.',
-      user: { id: result.insertId, fullName: normalizedName, email: normalizedEmail },
-    });
+    auditLogger.securityEvent('registration_success', { userId: result.insertId, outcome: 'created' });
+    return res.status(202).json(registrationResponse);
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ error: 'An account with this email already exists.' });
+      auditLogger.securityEvent('registration_duplicate', { outcome: 'accepted' });
+      return res.status(202).json(registrationResponse);
     }
 
+    auditLogger.securityEvent('registration_failure', { outcome: 'internal_error' });
     return res.status(500).json({ error: 'Unable to create your account. Please try again.' });
   }
 });

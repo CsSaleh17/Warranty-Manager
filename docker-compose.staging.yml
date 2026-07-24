@@ -1,0 +1,28 @@
+name: warranty-manager-staging
+
+services:
+  database:
+    container_name: warranty-manager-staging-db
+    image: mysql:8.4
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${DB_PORT:-3307}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in the staging environment file}
+      MYSQL_DATABASE: ${DB_NAME:?set DB_NAME in the staging environment file}
+      MYSQL_USER: ${DB_USER:?set DB_USER in the staging environment file}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in the staging environment file}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysqladmin ping --host=127.0.0.1 --user=$$MYSQL_USER --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    volumes:
+      - staging-database:/var/lib/mysql
+
+volumes:
+  staging-database:
