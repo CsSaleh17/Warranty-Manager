@@ -20,7 +20,9 @@ const pool = mysql.createPool({
   connectionLimit: config.db.connectionLimit,
   connectTimeout: config.db.connectTimeout,
   queueLimit: 0,
-  enableKeepAlive: true,
+  enableKeepAlive: config.db.enableKeepAlive,
+  maxIdle: config.db.maxIdle,
+  idleTimeout: config.db.idleTimeout,
   ssl,
 });
 
