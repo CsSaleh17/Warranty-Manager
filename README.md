@@ -247,6 +247,7 @@ DB_USER=
 DB_PASSWORD=
 DB_NAME=warranty_managers
 NODE_ENV=development
+EMAIL_PROVIDER=smtp
 ```
 
 The real `.env` is local-only and must contain no values in this README. `.env` is ignored and was confirmed untracked during production-readiness review. See [DEPLOYMENT.md](DEPLOYMENT.md) for the complete production variable contract.

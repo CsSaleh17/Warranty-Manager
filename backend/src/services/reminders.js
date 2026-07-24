@@ -1,16 +1,7 @@
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 const database = require('../config/database');
 const { loadEnvironment } = require('../config/environment');
-
-function transport() {
-  const config = loadEnvironment();
-  return nodemailer.createTransport({
-    host: config.smtp.host, port: config.smtp.port, secure: config.smtp.secure, requireTLS: config.smtp.requireTls,
-    auth: config.smtp.user ? { user: config.smtp.user, pass: config.smtp.password } : undefined,
-    connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000,
-  });
-}
+const { sendEmail } = require('./emailService');
 
 function reminderMessage(row) {
   const date = String(row.expiration_date).slice(0, 10);
@@ -30,7 +21,6 @@ async function runDueReminders() {
     WHERE p.reminder_enabled = 1 AND p.is_reminded = 0 AND p.reminder_sent_at IS NULL
       AND p.expiration_date >= CURDATE() AND DATE_SUB(p.expiration_date, INTERVAL p.reminder_days_before DAY) <= CURDATE()
       AND (p.reminder_claim_token IS NULL OR p.reminder_claimed_at < DATE_SUB(NOW(), INTERVAL 30 MINUTE))`);
-  const mailer = transport();
   let sent = 0;
   for (const row of rows) {
     const claimToken = crypto.randomUUID();
@@ -40,7 +30,7 @@ async function runDueReminders() {
           AND (reminder_claim_token IS NULL OR reminder_claimed_at < DATE_SUB(NOW(), INTERVAL 30 MINUTE))`, [claimToken, row.id]);
       if (!claim.affectedRows) continue;
       try {
-        await mailer.sendMail({ from: loadEnvironment().smtp.from, to: row.email, subject: `Warranty reminder: ${row.name}`, text: reminderMessage(row) });
+        await sendEmail({ to: row.email, subject: `Warranty reminder: ${row.name}`, text: reminderMessage(row), idempotencyKey: `reminder-${row.id}-${String(row.expiration_date).slice(0, 10)}` });
         const [complete] = await database.execute('UPDATE products SET is_reminded = 1, reminder_sent_at = NOW(), reminder_claim_token = NULL, reminder_claimed_at = NULL WHERE id = ? AND reminder_claim_token = ?', [row.id, claimToken]);
         if (complete.affectedRows) sent += 1;
       } catch (error) {

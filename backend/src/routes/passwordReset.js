@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const database = require('../config/database');
 const auditLogger = require('../services/auditLogger');
 const { loadEnvironment } = require('../config/environment');
+const { sendEmail } = require('../services/emailService');
 
 const router = express.Router();
 const genericMessage = 'If an account exists for this email, a password reset link has been sent.';
@@ -16,11 +17,8 @@ const validPassword = (password) => typeof password === 'string' && password.len
 // development still completes the secure token workflow without exposing the token in API output.
 async function sendResetEmail(email, token) {
   const config = loadEnvironment();
-  if (!config.smtp.host) return;
-  const nodemailer = require('nodemailer');
-  const transport = nodemailer.createTransport({ host: config.smtp.host, port: config.smtp.port, secure: config.smtp.secure, requireTLS: config.smtp.requireTls, auth: config.smtp.user ? { user: config.smtp.user, pass: config.smtp.password } : undefined, connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000 });
   const url = `${config.frontendUrl}/reset-password?token=${encodeURIComponent(token)}`;
-  await transport.sendMail({ from: config.smtp.from, to: email, subject: 'Reset your Warranty Manager password', text: `Use this link to reset your password: ${url}` });
+  await sendEmail({ to: email, subject: 'Reset your Warranty Manager password', text: `Use this link to reset your password: ${url}` });
 }
 
 router.post('/forgot-password', rateLimit({ windowMs: 15 * 60 * 1000, max: 5, standardHeaders: true, legacyHeaders: false, message: { message: genericMessage } }), async (req, res) => {

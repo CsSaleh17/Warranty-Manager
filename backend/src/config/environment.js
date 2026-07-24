@@ -61,9 +61,11 @@ function loadEnvironment(source = process.env) {
   const rateLimitStore = source.RATE_LIMIT_STORE || 'memory';
   if (!['memory', 'shared'].includes(rateLimitStore)) throw new Error('RATE_LIMIT_STORE must be memory or shared.');
   if (rateLimitStore === 'shared' || multiInstance) throw new Error('MULTI_INSTANCE requires a shared rate-limit adapter that is not configured in this build.');
+  const emailProvider = source.EMAIL_PROVIDER || 'smtp';
+  if (!['smtp', 'https_api'].includes(emailProvider)) throw new Error('EMAIL_PROVIDER must be smtp or https_api.');
   const smtpHost = source.SMTP_HOST?.trim() || '';
-  if (isProduction && !smtpHost) throw new Error('SMTP_HOST is required in production because password reset uses email delivery.');
-  if (isProduction && !source.SMTP_FROM?.trim()) throw new Error('SMTP_FROM is required in production because password reset uses email delivery.');
+  if (emailProvider === 'smtp' && isProduction && !smtpHost) throw new Error('SMTP_HOST is required in production because password reset uses email delivery.');
+  if (emailProvider === 'smtp' && isProduction && !source.SMTP_FROM?.trim()) throw new Error('SMTP_FROM is required in production because password reset uses email delivery.');
   if (smtpHost && !source.SMTP_FROM?.trim()) throw new Error('SMTP_FROM is required when SMTP_HOST is configured.');
   if (Boolean(source.SMTP_USER) !== Boolean(source.SMTP_PASSWORD)) throw new Error('SMTP_USER and SMTP_PASSWORD must be configured together.');
   const sslMode = source.DB_SSL_MODE || 'disabled';
@@ -75,6 +77,7 @@ function loadEnvironment(source = process.env) {
     jsonBodyLimit: source.JSON_BODY_LIMIT || '100kb', shutdownTimeoutMs: integer('SHUTDOWN_TIMEOUT_MS', source.SHUTDOWN_TIMEOUT_MS, 10000, { min: 1000, max: 60000 }),
     db: { host: required(source, 'DB_HOST', isProduction), port: integer('DB_PORT', source.DB_PORT, 3306, { min: 1, max: 65535 }), user: required(source, 'DB_USER', isProduction), password: required(source, 'DB_PASSWORD', isProduction), name: required(source, 'DB_NAME', isProduction), connectionLimit: integer('DB_CONNECTION_LIMIT', source.DB_CONNECTION_LIMIT, 10, { min: 1, max: 100 }), connectTimeout: integer('DB_CONNECT_TIMEOUT_MS', source.DB_CONNECT_TIMEOUT_MS, 10000, { min: 1000, max: 60000 }), enableKeepAlive: boolean('DB_ENABLE_KEEP_ALIVE', source.DB_ENABLE_KEEP_ALIVE, false), maxIdle: integer('DB_POOL_MAX_IDLE', source.DB_POOL_MAX_IDLE, 10, { min: 0, max: 100 }), idleTimeout: integer('DB_POOL_IDLE_TIMEOUT_MS', source.DB_POOL_IDLE_TIMEOUT_MS, 60000, { min: 1000, max: 300000 }), sslMode, sslCaFile: source.DB_SSL_CA_FILE || '' },
     smtp: { host: smtpHost, port: integer('SMTP_PORT', source.SMTP_PORT, 587, { min: 1, max: 65535 }), secure: boolean('SMTP_SECURE', source.SMTP_SECURE, false), requireTls: boolean('SMTP_REQUIRE_TLS', source.SMTP_REQUIRE_TLS, true), user: source.SMTP_USER || '', password: source.SMTP_PASSWORD || '', from: source.SMTP_FROM || '' },
+    email: { provider: emailProvider, from: source.HTTPS_EMAIL_FROM?.trim() || '', httpsApiUrl: source.HTTPS_EMAIL_API_URL?.trim() || '', httpsApiKey: source.HTTPS_EMAIL_API_KEY || '', httpsTimeoutMs: integer('EMAIL_HTTPS_TIMEOUT_MS', source.EMAIL_HTTPS_TIMEOUT_MS, 5000, { min: 1000, max: 30000 }), httpsMaxRetries: integer('EMAIL_HTTPS_MAX_RETRIES', source.EMAIL_HTTPS_MAX_RETRIES, 1, { min: 0, max: 2 }) },
     reminderSchedulerEnabled: boolean('REMINDER_SCHEDULER_ENABLED', source.REMINDER_SCHEDULER_ENABLED ?? (source.DISABLE_REMINDER_SCHEDULER === 'true' ? 'false' : undefined), !isProduction && nodeEnv !== 'test'),
     multiInstance, rateLimitStore,
   };

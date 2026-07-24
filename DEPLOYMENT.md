@@ -52,7 +52,7 @@ Multiple instances:
 - The current `express-rate-limit` store is process-local. Keep `MULTI_INSTANCE=false` and `RATE_LIMIT_STORE=memory` for a single API instance. Before multiple API instances are permitted, implement and test a supported shared-store adapter and update the validator; this build deliberately rejects both multi-instance mode and a merely declared `shared` value.
 - Run reminders from one external scheduled invocation of `npm run reminders:run`, or enable `REMINDER_SCHEDULER_ENABLED=true` on exactly one designated process.
 
-SMTP is required at production startup because password reset is a deployed feature. Configure `SMTP_HOST` and `SMTP_FROM`; configure `SMTP_USER` and `SMTP_PASSWORD` together when the relay uses authentication. SMTP is not part of `/api/ready`, so a temporary provider outage does not remove the whole site from service. Socket, greeting, and connection timeouts are bounded. Verify SPF, DKIM, and DMARC separately.
+Email delivery is selected with `EMAIL_PROVIDER`: use `smtp` with `SMTP_HOST`, `SMTP_FROM`, and optional paired `SMTP_USER`/`SMTP_PASSWORD`; or use `https_api` with `HTTPS_EMAIL_API_URL`, `HTTPS_EMAIL_API_KEY`, and `HTTPS_EMAIL_FROM`. The HTTPS adapter requires TLS, bounded `EMAIL_HTTPS_TIMEOUT_MS`, and bounded `EMAIL_HTTPS_MAX_RETRIES`. Provider rejection or timeout must not mark a reminder sent. SMTP is not part of `/api/ready`, so a temporary provider outage does not remove the whole site from service.
 
 ## Install, validate, migrate, build, and start
 
