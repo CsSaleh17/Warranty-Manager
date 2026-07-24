@@ -30,6 +30,15 @@ describe('production proxy, headers, sessions, and cookies', () => {
     expect(response.status).toBe(426);
   });
 
+  it('allows only the unauthenticated health probe over Railway internal HTTP', async () => {
+    const app = createApp(loadEnvironment(values), { database });
+    const health = await request(app).get('/api/health');
+    const protectedRoute = await request(app).get('/api/does-not-exist');
+
+    expect(health.status).toBe(200);
+    expect(protectedRoute.status).toBe(426);
+  });
+
   it('uses the durable store and sets Secure, HttpOnly, SameSite cookies in production', async () => {
     const app = createApp(loadEnvironment(values), { database });
     database.execute.mockResolvedValueOnce([[{ id: 7, full_name: 'Ava', email: 'ava@example.com', password_hash: 'hash' }]]).mockResolvedValue([{}]);

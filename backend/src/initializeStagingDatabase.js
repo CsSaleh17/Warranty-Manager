@@ -10,10 +10,15 @@ async function main() {
   if (context.environment !== 'staging') throw new Error('Baseline schema initialization is restricted to staging.');
   assertDatabaseMutationAllowed(context, 'initialize');
   const config = loadEnvironment();
+  const ssl = config.db.sslMode === 'disabled' ? undefined : {
+    rejectUnauthorized: true,
+    ...(config.db.sslCaFile ? { ca: fs.readFileSync(config.db.sslCaFile, 'utf8') } : {}),
+  };
   const connection = await mysql.createConnection({
     host: config.db.host, port: config.db.port, user: config.db.user, password: config.db.password,
     database: config.db.name, charset: 'utf8mb4', connectTimeout: config.db.connectTimeout,
-    multipleStatements: true
+    multipleStatements: true,
+    ssl,
   });
   try {
     const [rows] = await connection.execute("SELECT COUNT(*) AS application_tables FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name IN ('users', 'products', 'password_reset_tokens', 'sessions', 'schema_migrations')");

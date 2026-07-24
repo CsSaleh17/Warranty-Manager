@@ -29,6 +29,13 @@ describe('TiDB Cloud Starter compatibility contract', () => {
     expect(databaseConfig).toContain('idleTimeout: config.db.idleTimeout');
   });
 
+  it('keeps staging initialization on verified TLS when TiDB TLS is configured', () => {
+    const initializer = fs.readFileSync(path.resolve(__dirname, '../src/initializeStagingDatabase.js'), 'utf8');
+    expect(initializer).toContain('rejectUnauthorized: true');
+    expect(initializer).toContain("ca: fs.readFileSync(config.db.sslCaFile, 'utf8')");
+    expect(initializer).toContain('ssl,');
+  });
+
   it('keeps the schema within the MySQL-compatible features used by TiDB', () => {
     const schema = fs.readFileSync(path.resolve(__dirname, '../../database/schema.sql'), 'utf8');
     expect(schema).toContain('DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');

@@ -48,7 +48,7 @@ app.use((req, res, next) => {
 });
 const allowedOrigins = config.allowedOrigins || getAllowedOrigins();
 app.use(cors({ origin(origin, callback) { callback(null, !origin || allowedOrigins.has(origin)); }, credentials: true, methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type'] }));
-if (config.enforceHttps) app.use((req, res, next) => req.secure ? next() : res.status(426).json({ error: 'HTTPS is required.' }));
+if (config.enforceHttps) app.use((req, res, next) => (req.path === '/api/health' && config.trustProxy !== false) || req.secure ? next() : res.status(426).json({ error: 'HTTPS is required.' }));
 app.use(express.json({ limit: config.jsonBodyLimit }));
 app.use(session({
   name: 'warranty.sid',

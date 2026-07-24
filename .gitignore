@@ -6,3 +6,4 @@ backups/
 uploads/
 coverage/
 *.log
+backend/certs/
