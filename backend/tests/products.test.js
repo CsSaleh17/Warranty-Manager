@@ -93,6 +93,20 @@ describe('product management endpoints', () => {
     expect(database.execute).toHaveBeenCalledTimes(1);
   });
 
+  it('accepts image and PDF invoices without name, category, or store, but rejects a forged invoice action', async () => {
+    const agent = await authenticatedAgent();
+    database.execute.mockResolvedValueOnce([{ insertId: 42 }]).mockResolvedValueOnce([{ insertId: 43 }]);
+    const fields = (request) => request.field('purchaseDate', '2026-01-15').field('warrantyDuration', '2').field('warrantyUnit', 'months').field('invoiceAction', 'save');
+    const image = await fields(agent.post('/api/products').set('Origin', frontendOrigin))
+      .attach('invoice', Buffer.from([0xff, 0xd8, 0xff, 0xd9]), { filename: 'invoice.jpg', contentType: 'image/jpeg' });
+    const pdf = await fields(agent.post('/api/products').set('Origin', frontendOrigin))
+      .attach('invoice', Buffer.from('%PDF-1.4'), { filename: 'invoice.pdf', contentType: 'application/pdf' });
+    const forged = await agent.post('/api/products').set('Origin', frontendOrigin).send({ purchaseDate: '2026-01-15', warrantyDuration: 2, warrantyUnit: 'months', invoiceAction: 'save' });
+    expect(image.status).toBe(201);
+    expect(pdf.status).toBe(201);
+    expect(forged.status).toBe(400);
+  });
+
   it('rejects oversized invoice attachments before persistence', async () => {
     const agent = await authenticatedAgent();
     const oversized = Buffer.alloc(10 * 1024 * 1024 + 1);

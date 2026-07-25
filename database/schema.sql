@@ -12,9 +12,9 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS products (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   user_id INT UNSIGNED NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  category VARCHAR(100) NOT NULL,
-  store_name VARCHAR(255) NOT NULL,
+  name VARCHAR(255) NULL,
+  category VARCHAR(100) NULL,
+  store_name VARCHAR(255) NULL,
   purchase_date DATE NOT NULL,
   warranty_duration INT UNSIGNED NOT NULL,
   warranty_unit ENUM('days', 'months', 'years') NOT NULL,

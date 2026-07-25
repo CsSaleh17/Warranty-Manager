@@ -27,18 +27,18 @@ function ProductDetailsPage({ productId, onBack, onEdit }) {
   const days = Number(product.remainingWarrantyDays);
   const remaining = days < 0 ? t('products.expiredAgo', { count: formatDisplayNumber(Math.abs(days), language) }) : t('products.remainingDays', { count: formatDisplayNumber(days, language) });
   const status = t(`status.${product.warrantyStatus}`, { defaultValue: product.warrantyStatus });
-  const category = t(`categories.${product.category}`, { defaultValue: product.category });
+  const category = product.category ? t(`categories.${product.category}`, { defaultValue: product.category }) : t('detailsPage.notProvided');
   const reminderTiming = product.reminderDaysBefore ? formatWarrantyDuration(product.reminderDaysBefore, 'days', language) : '';
   const reminder = product.reminderEnabled ? <>{t('detailsPage.enabled')}{reminderTiming ? ` (${t('detailsPage.beforeDuration', { duration: reminderTiming })})` : ''}{product.isReminded ? <> — {t('detailsPage.sent')}{product.reminderSentAt ? <> {t('common.on')} <bdi>{formatDisplayDateTime(product.reminderSentAt, language)}</bdi></> : ''}</> : ''}</> : t('detailsPage.disabled');
 
   return <main className="products-page product-details-page">
     <button type="button" className="secondary-button" onClick={onBack}>{t('detailsPage.back')}</button>
-    <h1 dir="auto">{product.name}</h1>
+    <h1 dir="auto">{product.name || t('detailsPage.notProvided')}</h1>
     <p><strong>{status}</strong> · <span>{remaining}</span></p>
     <section className="product-form-card">
       <h2>{t('detailsPage.title')}</h2>
       <p><strong>{t('detailsPage.category')}</strong> {category}</p>
-      <p><strong>{t('detailsPage.store')}</strong> <bdi>{product.storeName}</bdi></p>
+      <p><strong>{t('detailsPage.store')}</strong> <bdi>{product.storeName || t('detailsPage.notProvided')}</bdi></p>
       <p><strong>{t('detailsPage.purchaseDate')}</strong> <bdi>{formatDisplayDate(product.purchaseDate, language)}</bdi></p>
       <p><strong>{t('detailsPage.serial')}</strong> <bdi>{product.serialNumber || t('detailsPage.notProvided')}</bdi></p>
       <p><strong>{t('detailsPage.warranty')}</strong> {formatWarrantyDuration(product.warrantyDuration, product.warrantyUnit, language)}</p>

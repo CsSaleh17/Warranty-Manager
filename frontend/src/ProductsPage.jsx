@@ -14,12 +14,12 @@ function formatDaysRemaining(days, t, language) { return Number(days) < 0 ? t('p
 function formatReminderTiming(days, t, language) { return t('products.timingDuration', { duration: formatWarrantyDuration(days, 'days', language) }); }
 
 function LocalizedProductCard({ product, t, language, onDetails, onEdit, onDelete, onDownload }) {
-  const category = translateCategory(product.category, t);
+  const category = product.category ? translateCategory(product.category, t) : t('detailsPage.notProvided');
   const status = translateWarrantyStatus(product.warrantyStatus, t);
   const reminderStatus = product.isReminded ? t('common.sent') : t('common.notSent');
   return <div className="localized-product-card">
-    <h2 dir="auto">{product.name}</h2>
-    <p dir="auto">{category} · {product.storeName}</p>
+    <h2 dir="auto">{product.name || t('detailsPage.notProvided')}</h2>
+    <p dir="auto">{category} · {product.storeName || t('detailsPage.notProvided')}</p>
     <p><strong>{status}</strong> · <span>{formatDaysRemaining(product.remainingWarrantyDays, t, language)}</span></p>
     <p>{t('products.expires', { date: formatDisplayDate(product.expirationDate, language) })}</p>
     <section className="invoice-section"><h3>{t('products.reminder')}</h3><p>{t('products.reminder')}: {product.reminderEnabled ? t('common.enabled') : t('common.disabled')}</p>{product.reminderEnabled && <><p>{formatReminderTiming(product.reminderDaysBefore, t, language)}</p><p>{t('products.statusLabel', { status: reminderStatus })}{product.reminderSentAt ? <> {t('common.on')} <bdi>{formatDisplayDateTime(product.reminderSentAt, language)}</bdi></> : ''}</p></>}</section>
@@ -40,7 +40,7 @@ function validateProductForm(form, hasInvoice = false, t = (key) => key) {
   else if (form.purchaseDate > todayString) errors.purchaseDate = t('validation.dateFuture');
   if (!Number.isInteger(warrantyDuration) || warrantyDuration <= 0) errors.warrantyDuration = t('validation.duration');
   if (!['days', 'months', 'years'].includes(form.warrantyUnit)) errors.warrantyUnit = t('validation.unit');
-  if (form.reminderEnabled) {
+  if (!hasInvoice && form.reminderEnabled) {
     const reminderDays = Number(form.reminderDaysBefore);
     if (!form.purchaseDate || !Number.isInteger(warrantyDuration) || warrantyDuration <= 0) errors.reminderEnabled = t('validation.reminder');
     if (!Number.isInteger(reminderDays) || reminderDays < 1 || reminderDays > 3650) errors.reminderDaysBefore = t('validation.reminderDays');
@@ -220,7 +220,7 @@ function ProductsPage({ user, initialMessage = '', statusFilter = '', onDetails,
     setEditingId(product.id);
     setDeliveryState({ isReminded: asBoolean(product.isReminded), reminderSentAt: product.reminderSentAt || null });
     setForm({
-      name: product.name, category: product.category, storeName: product.storeName, purchaseDate: product.purchaseDate,
+      name: product.name || '', category: product.category || '', storeName: product.storeName || '', purchaseDate: product.purchaseDate,
       warrantyDuration: String(product.warrantyDuration), warrantyUnit: product.warrantyUnit,
       serialNumber: product.serialNumber || '', notes: product.notes || '', reminderEnabled: asBoolean(product.reminderEnabled), reminderDaysBefore: product.reminderDaysBefore ?? '',
     });

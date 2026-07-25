@@ -47,4 +47,13 @@ const productionReadinessMigration = {
   },
 };
 
-module.exports = { migrations: [productionReadinessMigration] };
+const invoiceOptionalFieldsMigration = {
+  name: '20260725_invoice_optional_product_fields',
+  async up(connection) {
+    await connection.execute('ALTER TABLE products MODIFY COLUMN name VARCHAR(255) NULL');
+    await connection.execute('ALTER TABLE products MODIFY COLUMN category VARCHAR(100) NULL');
+    await connection.execute('ALTER TABLE products MODIFY COLUMN store_name VARCHAR(255) NULL');
+  },
+};
+
+module.exports = { migrations: [productionReadinessMigration, invoiceOptionalFieldsMigration] };

@@ -38,6 +38,28 @@ describe('ProductsPage', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
+  it('requires only warranty fields when a real invoice file is selected', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ products: [] }) });
+    render(<ProductsPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Add product' }));
+    const invoice = new File(['%PDF-1.4'], 'invoice.pdf', { type: 'application/pdf' });
+    fireEvent.change(screen.getByLabelText('Invoice attachment'), { target: { files: [invoice] } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save product' }));
+    expect(screen.queryByText('Product name is required.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Category is required.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Store name is required.')).not.toBeInTheDocument();
+    expect(await screen.findByText('Purchase date is required.')).toBeInTheDocument();
+  });
+
+  it('uses the localized Not specified fallback for invoice-only product fields', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ products: [{ id: 91, name: null, category: null, storeName: null, warrantyStatus: 'Active', remainingWarrantyDays: 12, expirationDate: '2026-12-31', reminderEnabled: false, hasInvoice: true }], pagination: { totalItems: 1 }, availableFilters: { stores: [], categories: [] } }) });
+
+    render(<ProductsPage />);
+
+    const heading = await screen.findByRole('heading', { name: 'Not specified' });
+    expect(heading.closest('.localized-product-card')).toHaveTextContent('Not specified · Not specified');
+  });
+
   it('keeps reminders disabled by default and reveals timing only when enabled', async () => {
     global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ products: [] }) });
     render(<ProductsPage />);

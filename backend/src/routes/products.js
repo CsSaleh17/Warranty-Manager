@@ -62,11 +62,11 @@ function validateStoredInvoice(req, res, next) {
 
 router.use(requireAuthentication);
 
-function validateProduct(input = {}) {
+function validateProduct(input = {}, hasInvoice = false) {
   const errors = {};
-  const name = typeof input.name === 'string' ? input.name.trim() : '';
-  const category = normalizeCategory(input.category);
-  const storeName = cleanStoreName(input.storeName);
+  const name = typeof input.name === 'string' && input.name.trim() ? input.name.trim() : null;
+  const category = normalizeCategory(input.category) || null;
+  const storeName = cleanStoreName(input.storeName) || null;
   const purchaseDate = typeof input.purchaseDate === 'string' ? input.purchaseDate : '';
   const warrantyDuration = (typeof input.warrantyDuration === 'string' || typeof input.warrantyDuration === 'number') ? Number(input.warrantyDuration) : Number.NaN;
   const warrantyUnit = typeof input.warrantyUnit === 'string' ? input.warrantyUnit : '';
@@ -78,11 +78,11 @@ function validateProduct(input = {}) {
   const today = new Date();
   const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
 
-  if (!name) errors.name = 'Product name is required.';
-  else if (name.length > 255) errors.name = 'Product name must be 255 characters or fewer.';
-  if (!category) errors.category = 'Category is required.';
-  if (!storeName) errors.storeName = 'Store name is required.';
-  else if (storeName.length > 255) errors.storeName = 'Store name must be 255 characters or fewer.';
+  if (!hasInvoice && !name) errors.name = 'Product name is required.';
+  else if (name?.length > 255) errors.name = 'Product name must be 255 characters or fewer.';
+  if (!hasInvoice && !category) errors.category = 'Category is required.';
+  if (!hasInvoice && !storeName) errors.storeName = 'Store name is required.';
+  else if (storeName?.length > 255) errors.storeName = 'Store name must be 255 characters or fewer.';
   if (!purchaseDate) errors.purchaseDate = 'Purchase date is required.';
   else if (!parsedPurchaseDate || parsedPurchaseDate.getTime() > todayUtc) errors.purchaseDate = 'Purchase date must be valid and cannot be in the future.';
   if (!Number.isInteger(warrantyDuration) || warrantyDuration < 1) errors.warrantyDuration = 'Warranty duration must be a positive whole number.';
@@ -90,7 +90,7 @@ function validateProduct(input = {}) {
   if (!VALID_WARRANTY_UNITS.includes(warrantyUnit)) errors.warrantyUnit = 'Warranty unit must be days, months, or years.';
   if (serialNumber.length > 255) errors.serialNumber = 'Serial number must be 255 characters or fewer.';
   if (notes.length > 5000) errors.notes = 'Notes must be 5000 characters or fewer.';
-  if (reminderEnabled && (!Number.isInteger(reminderDaysBefore) || reminderDaysBefore < 1 || reminderDaysBefore > 3650)) errors.reminderDaysBefore = 'Reminder days must be a whole number between 1 and 3650.';
+  if (!hasInvoice && reminderEnabled && (!Number.isInteger(reminderDaysBefore) || reminderDaysBefore < 1 || reminderDaysBefore > 3650)) errors.reminderDaysBefore = 'Reminder days must be a whole number between 1 and 3650.';
 
   return {
     errors,
@@ -166,7 +166,7 @@ router.get('/', async (req, res) => {
 router.post('/', uploadLimiter, attachmentUpload.single('invoice'), validateStoredInvoice, async (req, res) => {
   const invoiceAction = req.body?.invoiceAction;
   if (!['none', 'save', undefined].includes(invoiceAction) || (invoiceAction === 'save' && !req.file)) { removeInvoiceFile(req.file?.filename); return res.status(400).json({ error: 'Invalid invoice action.' }); }
-  const { errors, product } = validateProduct(req.body);
+  const { errors, product } = validateProduct(req.body, Boolean(req.file));
   if (Object.keys(errors).length > 0) { removeInvoiceFile(req.file?.filename); return res.status(400).json({ errors }); }
 
   const warranty = calculateWarranty(product.purchaseDate, product.warrantyDuration, product.warrantyUnit);
@@ -203,10 +203,6 @@ router.put('/:id', uploadLimiter, attachmentUpload.single('invoice'), validateSt
   const id = validProductId(req.params.id);
   if (!id) { removeInvoiceFile(req.file?.filename); return res.status(404).json({ error: 'Product not found.' }); }
 
-  const { errors, product } = validateProduct(req.body);
-  if (Object.keys(errors).length > 0) { removeInvoiceFile(req.file?.filename); return res.status(400).json({ errors }); }
-
-  const warranty = calculateWarranty(product.purchaseDate, product.warrantyDuration, product.warrantyUnit);
   try {
     const [existing] = await database.execute('SELECT invoice_path, expiration_date, reminder_enabled, reminder_days_before, is_reminded, reminder_sent_at FROM products WHERE id = ? AND user_id = ?', [id, req.session.user.id]);
     if (!existing[0]) { auditLogger.productMutation('product_update', { productId: id, userId: req.session.user.id, outcome: 'not_found' }); removeInvoiceFile(req.file?.filename); return res.status(404).json({ error: 'Product not found.' }); }
@@ -214,6 +210,9 @@ router.put('/:id', uploadLimiter, attachmentUpload.single('invoice'), validateSt
     const invoiceAction = requestedInvoiceAction === 'none' ? 'keep' : requestedInvoiceAction === 'save' ? 'replace' : requestedInvoiceAction;
     if (!['keep', 'replace', 'remove'].includes(invoiceAction) || (invoiceAction === 'replace' && !req.file) || (invoiceAction !== 'replace' && req.file)) { removeInvoiceFile(req.file?.filename); return res.status(400).json({ error: 'Invalid invoice action.' }); }
     const invoicePath = invoiceAction === 'replace' ? req.file.filename : invoiceAction === 'remove' ? null : existing[0].invoice_path;
+    const { errors, product } = validateProduct(req.body, Boolean(invoicePath));
+    if (Object.keys(errors).length > 0) { removeInvoiceFile(req.file?.filename); return res.status(400).json({ errors }); }
+    const warranty = calculateWarranty(product.purchaseDate, product.warrantyDuration, product.warrantyUnit);
     const reminderChanged = databaseBoolean(existing[0].reminder_enabled) !== product.reminderEnabled || Number(existing[0].reminder_days_before) !== Number(product.reminderDaysBefore) || String(existing[0].expiration_date) !== warranty.expirationDate;
     const isReminded = product.reminderEnabled && (!reminderChanged ? existing[0].is_reminded : false);
     const reminderSentAt = product.reminderEnabled && !reminderChanged ? existing[0].reminder_sent_at : null;
