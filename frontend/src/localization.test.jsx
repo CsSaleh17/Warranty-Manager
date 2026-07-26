@@ -18,4 +18,10 @@ describe('localized product presentation', () => {
     expect(formatDisplayDateTime(null, 'ar')).toBe('');
     expect(formatDisplayDateTime('invalid', 'ar')).toBe('invalid');
   });
+
+  it('converts stored UTC reminder timestamps to Arabia Standard Time', () => {
+    expect(formatDisplayDateTime('2026-07-18 11:00:00', 'en')).toMatch(/02:00:00 PM/);
+    expect(formatDisplayDateTime('2026-07-18 21:30:00', 'en')).toMatch(/07\/19\/2026/);
+    expect(formatDisplayDateTime('2026-07-18 11:00:00', 'ar')).toMatch(/٢/);
+  });
 });

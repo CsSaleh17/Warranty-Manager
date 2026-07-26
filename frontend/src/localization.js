@@ -23,7 +23,7 @@ export function formatDisplayDateTime(value, language) {
   if (!value) return '';
   const normalized = String(value).trim().replace(' ', 'T');
   const date = new Date(`${normalized}${/[zZ]|[+-]\d\d:?\d\d$/.test(normalized) ? '' : 'Z'}`);
-  return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat(language === 'ar' ? 'ar-SA-u-ca-gregory-nu-arab' : 'en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' }).format(date);
+  return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat(language === 'ar' ? 'ar-SA-u-ca-gregory-nu-arab' : 'en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Riyadh' }).format(date);
 }
 
 export function formatWarrantyDuration(value, unit, language) {
